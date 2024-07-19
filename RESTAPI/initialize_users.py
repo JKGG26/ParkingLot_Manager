@@ -33,7 +33,7 @@ def create_main_user(env_user_variables: list, role: str):
         group.user_set.add(user)
         print(f"User '{user.username}' added to group '{role}'.")
     except Exception as exc:
-        print(exc)
+        #print(exc)
         print("\n\nUser could not be created")
 
 
