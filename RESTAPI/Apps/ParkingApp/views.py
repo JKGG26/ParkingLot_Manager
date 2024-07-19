@@ -5,8 +5,11 @@ from django.contrib.auth import authenticate
 from django.views import View
 from django.contrib.auth.models import User, Group
 
-from .security.authentication import generate_jwt, jwt_authenticate
+from datetime import datetime, timezone, timedelta
+from .authentication import generate_jwt, jwt_authenticate, jwt_decode
 from .utils.http_utils import get_post_params
+
+from .models import BlackListTokenAccess
 
 
 @csrf_exempt
@@ -68,7 +71,34 @@ def RegisterSocio(request):
             return JsonResponse({'error': 'Permission Denied'}, status=401)
     else:
         return JsonResponse({'error': 'Authorization header required'}, status=401)
-    
+
+
+@csrf_exempt
+def Logout_user(request):
+    if request.method == 'POST':
+        auth_header = request.headers.get('Authorization')
+        if auth_header:
+            prefix, token = auth_header.split(' ')
+            user = jwt_authenticate(token)
+            # Check if user was authenticated successfully
+            if user is None:
+                return JsonResponse({'error': 'Access Denied'}, status=401)
+            
+            payload = jwt_decode(token)
+            expired_at = datetime.fromtimestamp(payload["exp"]).astimezone(timezone.utc).isoformat()
+            # Add current token to the Blacklist of tokens
+            invalid_token = BlackListTokenAccess(
+                token = token,
+                expired_at = expired_at,
+                user_id = user
+            )
+            invalid_token.save()
+            return JsonResponse({'message': f"Succesfull Log Out"})
+        else:
+            return JsonResponse({'error': 'Authorization header required'}, status=401)
+    else:
+        return JsonResponse({'error': 'Method not supported'})
+
 
 class ProtectedView(View):
     def get(self, request):
