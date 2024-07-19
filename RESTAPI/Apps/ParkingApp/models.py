@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from datetime import datetime
 
 
 class BlackListTokenAccess(models.Model):
@@ -20,6 +21,18 @@ class ParkingLot(models.Model):
     max_num_vehicles = models.IntegerField(null=False, blank=False)
     num_vehicles = models.IntegerField(default=0)
     price_per_hour = models.DecimalField(max_digits=8, decimal_places=2, null=False, blank=False)
+
+    def __str__(self) -> str:
+        return f"name: {self.name} - max_num_vehicles: {self.max_num_vehicles} - price_per_hour: {self.price_per_hour}"
+    
+    def get_properties(self) -> dict:
+        return {
+            'name': self.name,
+            'max_num_vehicles': self.max_num_vehicles,
+            'num_vehicles': self.num_vehicles,
+            'price_per_hour': self.price_per_hour,
+            'created_at': self.created_at.isoformat(),
+        }
 
 
 class User_ParkingLots(models.Model):
