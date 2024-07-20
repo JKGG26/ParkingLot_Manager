@@ -78,6 +78,15 @@ class VehicleParkingRegister(models.Model):
     parking_spot = models.IntegerField(null=True, blank=False)
     remarks = models.TextField(max_length=300, null=True, blank=True)
 
+    def get_properties(self):
+        return {
+            "vehicle_plate": self.vehicle_plate,
+            "parking_id": self.parking_id.id,
+            "entry_time": self.entry_time,
+            "parking_spot": self.parking_spot,
+            "remarks": self.remarks
+        }
+
 class VehicleParkingHistorical(models.Model):
     vehicle_plate = models.TextField(max_length=6, null=True, blank=False)
     parking_id = models.ForeignKey(
