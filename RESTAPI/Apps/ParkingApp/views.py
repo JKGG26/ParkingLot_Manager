@@ -9,7 +9,8 @@ from datetime import datetime, timezone
 from .authentication import generate_jwt, jwt_authenticate, jwt_decode
 from .utils.http_utils import get_post_params, get_json_body
 
-from .models import BlackListTokenAccess, ParkingLot, User_ParkingLots, VehicleParkingRegister, VehicleParkingHistorical, ParkingDailyIncomes
+from .models import BlackListTokenAccess, ParkingLot, User_ParkingLots
+from .models import VehicleParkingRegister, VehicleParkingHistorical, ParkingDailyIncomes
 
 
 class ProtectedView(View):
@@ -327,6 +328,55 @@ def edit_parking_lot(request, id):
                 #parking_lots_ids = [parking_rel.parking_lot_id]
                 parking_lot = ParkingLot.objects.get(id=id)
                 return JsonResponse(parking_lot.get_properties(), status=200)
+            else:
+                return JsonResponse({'error': 'Permission Denied'}, status=401)
+        else:
+            return JsonResponse({'error': 'Authorization header required'}, status=401)
+    else:
+        return JsonResponse({'error': 'Method not supported'})
+    
+
+##################################
+### ASSOCIATE PARKINGS (ADMIN) ###
+##################################
+# ---- Set Socio to Parking ---- #
+@csrf_exempt
+def set_socio_parking(request):
+    if request.method == 'POST':
+        auth_header = request.headers.get('Authorization')
+        if auth_header:
+            prefix, token = auth_header.split(' ')
+            user = jwt_authenticate(token)
+            # Check if user was authenticated successfully
+            if user is None:
+                return JsonResponse({'error': 'Access Denied'}, status=401)
+            # Get user groups QuerySet
+            user_groups = user.groups.values_list()
+            # Get user groups names
+            user_groups_names = [group_set[1] for group_set in user_groups]
+            if 'Admin' in user_groups_names:
+                params_required = ['username', 'parking_name']
+                params_gotten, msg = get_post_params(request, params_required)
+                if msg is not None:
+                    return JsonResponse({'error': f"{msg}"}, status=400)
+                
+                try:
+                    # Get the ParkingLot to assign to the 'Socio'
+                    parking_lot = ParkingLot.objects.get(name=params_gotten['parking_name'])
+                    # Get the user to assign to the ParkingLot
+                    socio = User.objects.get(username=params_gotten['username'])
+                    # Create new record for relation 'User_ParkingLots'
+                    user_parking = User_ParkingLots(
+                        user_id = socio,
+                        parking_id = parking_lot
+                    )
+                    # Save the new parking lot in the database
+                    user_parking.save()
+                    return JsonResponse({'id': user_parking.id}, status=201)
+                except (ParkingLot.DoesNotExist, User.DoesNotExist):
+                    return JsonResponse({'error': 'Items do not exist'}, status=400)
+                except:
+                    return JsonResponse({'error': 'Item cannot be created'}, status=400)
             else:
                 return JsonResponse({'error': 'Permission Denied'}, status=401)
         else:
