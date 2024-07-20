@@ -241,14 +241,47 @@ def get_parking_lot(request, id):
             # Get user groups names
             user_groups_names = [group_set[1] for group_set in user_groups]
             if 'Admin' in user_groups_names:
-                parking_lot = ParkingLot.objects.get(id=id)
-                return JsonResponse(parking_lot.get_properties(), status=200)
+                try:
+                    parking_lot = ParkingLot.objects.get(id=id)
+                    return JsonResponse(parking_lot.get_properties(), status=200)
+                except:
+                    return JsonResponse({'error': 'Item not found'}, status=404)
             elif 'Socio' in user_groups_names:
                 # Get parking lots associated to current 'Socio'
                 #parking_lots_associated = User_ParkingLots.objects.get(user_id=user.id)
                 #parking_lots_ids = [parking_rel.parking_lot_id]
                 parking_lot = ParkingLot.objects.get(id=id)
                 return JsonResponse(parking_lot.get_properties(), status=200)
+            else:
+                return JsonResponse({'error': 'Permission Denied'}, status=401)
+        else:
+            return JsonResponse({'error': 'Authorization header required'}, status=401)
+    else:
+        return JsonResponse({'error': 'Method not supported'})
+    
+
+# ------------ GET ------------ #
+@csrf_exempt
+def delete_parking_lot(request, id):
+    if request.method == 'DELETE':
+        auth_header = request.headers.get('Authorization')
+        if auth_header:
+            prefix, token = auth_header.split(' ')
+            user = jwt_authenticate(token)
+            # Check if user was authenticated successfully
+            if user is None:
+                return JsonResponse({'error': 'Access Denied'}, status=401)
+            # Get user groups QuerySet
+            user_groups = user.groups.values_list()
+            # Get user groups names
+            user_groups_names = [group_set[1] for group_set in user_groups]
+            if 'Admin' in user_groups_names:
+                try:
+                    parking_lot = ParkingLot.objects.get(id=id)
+                    parking_lot.delete()
+                    return JsonResponse({}, status=204)
+                except:
+                    return JsonResponse({'error': 'Item not found'}, status=404)
             else:
                 return JsonResponse({'error': 'Permission Denied'}, status=401)
         else:
