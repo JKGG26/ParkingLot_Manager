@@ -67,26 +67,32 @@ class User_ParkingLots(models.Model):
     
 
 class VehicleParkingRegister(models.Model):
-    vehicle_plate = models.TextField(max_length=6, null=False, blank=False)
+    vehicle_plate = models.TextField(max_length=6, null=True, blank=False)
     parking_id = models.ForeignKey(
         ParkingLot,                 # Model (Table) to set foreign key relation
-        null=False,                 # Dont allow null values in this field
+        null=True,                 # Dont allow null values in this field
         blank=False,                # Dont allow blank values in this field
         on_delete=models.DO_NOTHING # If a User is deleted, all related inactive tokens too
     )
     entry_time = models.DateTimeField(auto_now_add=True)
-    parking_spot = models.IntegerField(null=False, blank=False)
+    parking_spot = models.IntegerField(null=True, blank=False)
     remarks = models.TextField(max_length=300, null=True, blank=True)
 
-class VehicleParkingHistorical(ParkingLot):
-    exit_time = models.DateTimeField(auto_now_add=True)
+class VehicleParkingHistorical(models.Model):
+    vehicle_plate = models.TextField(max_length=6, null=True, blank=False)
+    parking_id = models.ForeignKey(
+        ParkingLot,                 # Model (Table) to set foreign key relation
+        null=True,                 # Dont allow null values in this field
+        blank=False,                # Dont allow blank values in this field
+        on_delete=models.DO_NOTHING # If a User is deleted, all related inactive tokens too
+    )
+    entry_time = models.DateTimeField(null=True)
+    parking_spot = models.IntegerField(null=True, blank=False)
+    remarks = models.TextField(max_length=300, null=True, blank=True)
+    exit_time = models.DateTimeField(default=datetime.now())
     hours = models.SmallIntegerField(null=False, blank=False)
     income = models.DecimalField(max_digits=10, decimal_places=2, null=False, blank=False)
-    class Meta:
-        # This specifies that the model should use the table of the derived class
-        # instead of the base class's table
-        verbose_name = "VehicleParkingHistorical"
-        verbose_name_plural = "VehicleParkingHistorical"
+
 
 class ParkingDailyIncomes(models.Model):
     parking_id = models.ForeignKey(
