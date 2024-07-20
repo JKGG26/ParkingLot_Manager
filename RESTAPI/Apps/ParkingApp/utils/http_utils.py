@@ -1,3 +1,4 @@
+import json
 
 
 def get_post_params(request, params_required) -> tuple:
@@ -11,3 +12,12 @@ def get_post_params(request, params_required) -> tuple:
             return {}, f"Param '{param}' required"
     
     return params_gotten, None
+
+
+def get_json_body(request) -> dict:
+    try:
+        # Parse JSON data from request body
+        data = json.loads(request.body)
+        return data
+    except json.JSONDecodeError:
+        return {}
