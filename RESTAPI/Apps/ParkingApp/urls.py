@@ -2,7 +2,7 @@ from django.urls import path
 from .views import ProtectedView, AdminOnlyView, SocioOnlyView      # Test access endpoints
 from .views import obtain_jwt_token, RegisterSocio, Logout_user     # User managing endpoints
 from .views import create_parking_lot, list_parking_lots, get_parking_lot, delete_parking_lot, edit_parking_lot
-from .views import set_socio_parking
+from .views import set_socio_parking, delete_user_parking_relation
 
 
 urlpatterns = [
@@ -18,4 +18,5 @@ urlpatterns = [
     path('api/delete-parking-lot/<int:id>', delete_parking_lot, name='delete-parking-lot'),
     path('api/edit-parking-lot/<int:id>', edit_parking_lot, name='edit-parking-lot'),
     path('api/set-socio-parking/', set_socio_parking, name='set-socio-parking'),
+    path('api/delete-socio-parking/<int:id>', delete_user_parking_relation, name='delete-socio-parking'),
 ]
