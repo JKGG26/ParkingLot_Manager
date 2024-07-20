@@ -368,7 +368,8 @@ def set_socio_parking(request):
                     # Create new record for relation 'User_ParkingLots'
                     user_parking = User_ParkingLots(
                         user_id = socio,
-                        parking_id = parking_lot
+                        parking_id = parking_lot,
+                        relation_id = f"{parking_lot.name}-{socio.username}"
                     )
                     # Save the new parking lot in the database
                     user_parking.save()
