@@ -14,10 +14,15 @@ def get_post_params(request, params_required) -> tuple:
     return params_gotten, None
 
 
-def get_json_body(request) -> dict:
+def get_json_body(request, fields_required: list = None) -> dict:
     try:
         # Parse JSON data from request body
         data = json.loads(request.body)
-        return data
+        if fields_required is None:
+            fields_required = []
+        for field in fields_required:
+            if field not in list(data.keys()):
+                return {}, f"Param '{field}' required"
+        return data, None
     except json.JSONDecodeError:
-        return {}
+        return {}, None

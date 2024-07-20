@@ -3,6 +3,7 @@ from .views import ProtectedView, AdminOnlyView, SocioOnlyView      # Test acces
 from .views import obtain_jwt_token, RegisterSocio, Logout_user     # User managing endpoints
 from .views import create_parking_lot, list_parking_lots, get_parking_lot, delete_parking_lot, edit_parking_lot
 from .views import set_socio_parking, delete_user_parking_relation
+from .views import register_vehicle_entry
 
 
 urlpatterns = [
@@ -19,4 +20,5 @@ urlpatterns = [
     path('api/edit-parking-lot/<int:id>', edit_parking_lot, name='edit-parking-lot'),
     path('api/set-socio-parking/', set_socio_parking, name='set-socio-parking'),
     path('api/delete-socio-parking/<int:id>', delete_user_parking_relation, name='delete-socio-parking'),
+    path('api/register-vehicle-entry/', register_vehicle_entry, name='register-vehicle-entry'),
 ]
