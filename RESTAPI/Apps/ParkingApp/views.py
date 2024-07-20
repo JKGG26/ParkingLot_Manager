@@ -427,9 +427,9 @@ def delete_user_parking_relation(request, id):
     
 
 #################################
-##### CRUD VEHICLES (SOCIO) #####
+#### RECORD VEHICLES (SOCIO) ####
 #################################
-# ----------- CREATE ---------- #
+# ----------- RECORD ---------- #
 @csrf_exempt
 def register_vehicle_entry(request):
     if request.method == 'POST':
@@ -459,7 +459,7 @@ def register_vehicle_entry(request):
                 # Check if 'vehicle_plate' is in any parking lot
                 try:
                     existing_vehicle = VehicleParkingRegister.objects.get(vehicle_plate=body_dict['vehicle_plate'])
-                    return JsonResponse({'message': "Entry cannot be registered, the plate already exists in this or another parking lot"}, status=402)
+                    return JsonResponse({'message': "Entry cannot be registered, the plate already exists in this or another parking lot"}, status=400)
                 except:
                     pass
                 
@@ -498,6 +498,78 @@ def register_vehicle_entry(request):
                     return JsonResponse({'error': f'Access Denied'}, status=404)
                 except:
                     return JsonResponse({'error': f'Item cannot be created'}, status=400)
+            else:
+                return JsonResponse({'error': 'Permission Denied'}, status=401)
+        else:
+            return JsonResponse({'error': 'Authorization header required'}, status=401)
+    else:
+        return JsonResponse({'error': 'Method not supported'})
+
+
+# ----------- OUTPUT ---------- #
+@csrf_exempt
+def register_vehicle_exit(request):
+    if request.method == 'POST':
+        auth_header = request.headers.get('Authorization')
+        if auth_header:
+            prefix, token = auth_header.split(' ')
+            user = jwt_authenticate(token)
+            # Check if user was authenticated successfully
+            if user is None:
+                return JsonResponse({'error': 'Access Denied'}, status=401)
+            # Get user groups QuerySet
+            user_groups = user.groups.values_list()
+            # Get user groups names
+            user_groups_names = [group_set[1] for group_set in user_groups]
+            if 'Socio' in user_groups_names:
+                params_required = ['vehicle_plate']
+                body_dict, msg = get_json_body(request, params_required)
+                if len(body_dict) == 0:
+                    if msg is None:
+                        return JsonResponse({'error': 'Invalid JSON'}, status=402)
+                    return JsonResponse({'error': msg}, status=402)
+                
+                # Check if 'vehicle_plate' achieve the requirements
+                if len(body_dict['vehicle_plate']) != 6 or not str(body_dict['vehicle_plate']).isalnum() or 'ñ' in body_dict['vehicle_plate'].lower():
+                    return JsonResponse({'error': f"Vehicle plate '{body_dict['vehicle_plate']}' is invalid"}, status=402)
+                
+                try:
+                    # Check if 'vehicle_plate' is in any parking lot and get object
+                    vehicle_entry = VehicleParkingRegister.objects.get(vehicle_plate=body_dict['vehicle_plate'])
+                    # Get ParkingLot item from parking_id
+                    parking_lot = vehicle_entry.parking_id
+                    # Check if parking gotten is associated to current 'Socio'.
+                    # If relation does not exist an Exception is raised (Variable not used)
+                    user_parking_lots = User_ParkingLots.objects.get(parking_id=parking_lot.id, user_id=user.id)
+                    print(user_parking_lots)
+                    exit_time = datetime.now(timezone.utc)
+                    delta_time = exit_time - vehicle_entry.entry_time#.replace(tzinfo=None)
+                    hours = 1 + int(delta_time.total_seconds() / 3600)
+                    # Create the new ParkingLot
+                    vehicle_historical = VehicleParkingHistorical(
+                        vehicle_plate = vehicle_entry.vehicle_plate,
+                        entry_time = vehicle_entry.entry_time,
+                        parking_id = vehicle_entry.parking_id,
+                        parking_spot = vehicle_entry.parking_spot,
+                        remarks = vehicle_entry.remarks,
+                        exit_time = exit_time,
+                        hours = hours,
+                        income = hours * parking_lot.price_per_hour
+                    )
+                    # Save the new vehicle exit in historical in the database
+                    vehicle_historical.save()
+                    # Delete the vehicle register from 'VehicleParkingRegister'
+                    vehicle_entry.delete()
+                    return JsonResponse({'message': 'Registered exit'}, status=200)
+                except VehicleParkingRegister.DoesNotExist:
+                    return JsonResponse({'message': "Exit cannot be registered, the plate does not exist in any parking lot"}, status=404)
+                except ParkingLot.DoesNotExist:
+                    return JsonResponse({'error': 'Parking not found'}, status=404)
+                except User_ParkingLots.DoesNotExist:
+                    return JsonResponse({'error': f'Access Denied'}, status=404)
+                except Exception as exc:
+                    print(exc)
+                    return JsonResponse({'error': f'Item cannot be registered'}, status=400)
             else:
                 return JsonResponse({'error': 'Permission Denied'}, status=401)
         else:
