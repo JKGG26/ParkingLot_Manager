@@ -333,12 +333,6 @@ def edit_parking_lot(request, id):
                     return JsonResponse(parking_lot.get_properties(), status=200)
                 except:
                     return JsonResponse({'error': 'Item not found'}, status=404)
-            elif 'Socio' in user_groups_names:
-                # Get parking lots associated to current 'Socio'
-                #parking_lots_associated = User_ParkingLots.objects.get(user_id=user.id)
-                #parking_lots_ids = [parking_rel.parking_lot_id]
-                parking_lot = ParkingLot.objects.get(id=id)
-                return JsonResponse(parking_lot.get_properties(), status=200)
             else:
                 return JsonResponse({'error': 'Permission Denied'}, status=401)
         else:
@@ -475,6 +469,19 @@ def register_vehicle_entry(request):
                     # Check if parking gotten is associated to current 'Socio'.
                     # If relation does not exist an Exception is raised (Variable not used)
                     user_parking_lots = User_ParkingLots.objects.get(parking_id=parking_lot.id, user_id=user.id)
+                    ### Check availability of parking spot in selected parking lot ###
+                    # Get parking lot capacity
+                    capacity = parking_lot.max_num_vehicles
+                    # Get amount of busy parking spots in parking lot
+                    busy_capacity = len(VehicleParkingRegister.objects.filter(parking_id=parking_lot.id))
+                    if busy_capacity == capacity:
+                        return JsonResponse({'message': 'There are not free spots in this parking lot'}, status=400)
+                    # Check if the expected parking spot is available
+                    try:
+                        parking_spot = VehicleParkingRegister.objects.get(parking_id=parking_lot.id, parking_spot=body_dict['parking_spot'])
+                        return JsonResponse({'message': f"Spots '{body_dict['parking_spot']}' is not available in this parking lot"}, status=400)
+                    except:
+                        pass
                     # Create the new ParkingLot
                     vehicle_entry = VehicleParkingRegister(
                         vehicle_plate = body_dict['vehicle_plate'],
