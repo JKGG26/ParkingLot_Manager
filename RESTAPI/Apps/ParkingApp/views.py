@@ -612,3 +612,44 @@ def list_vehicles_entries(request):
             return JsonResponse({'error': 'Authorization header required'}, status=401)
     else:
         return JsonResponse({'error': 'Method not supported'})
+    
+
+# ------------ GET ------------ #
+def get_vehicles_entries(request, id):
+    if request.method == 'GET':
+        auth_header = request.headers.get('Authorization')
+        if auth_header:
+            prefix, token = auth_header.split(' ')
+            user = jwt_authenticate(token)
+            # Check if user was authenticated successfully
+            if user is None:
+                return JsonResponse({'error': 'Access Denied'}, status=401)
+            # Get user groups QuerySet
+            user_groups = user.groups.values_list()
+            # Get user groups names
+            user_groups_names = [group_set[1] for group_set in user_groups]
+            try:
+                if 'Admin' in user_groups_names:
+                    # Check if parking_id to get data exists in DB (Only for ADMIN)
+                    parking_lot = ParkingLot.objects.get(id=id)
+                    # Get all records of vehicles entries for parking_id
+                    vehicles_entries = [vehicle_entry.get_properties() for vehicle_entry in VehicleParkingRegister.objects.filter(parking_id=id)]
+                    return JsonResponse(vehicles_entries, safe=False, status=200)
+                elif 'Socio' in user_groups_names:
+                    # Check if current 'Socio' has assigned the parking lot to get data
+                    user_parking_lot = User_ParkingLots.objects.get(parking_id=id, user_id=user.id)
+                    # Get all records of vehicles entries for parking_id
+                    vehicles_entries = [vehicle_entry.get_properties() for vehicle_entry in VehicleParkingRegister.objects.filter(parking_id=id)]
+                    return JsonResponse(vehicles_entries, safe=False, status=200)
+                else:
+                    return JsonResponse({'error': 'Permission Denied'}, status=401)
+            except ParkingLot.DoesNotExist:
+                return JsonResponse({'error': 'Item not found'}, status=404)
+            except User_ParkingLots.DoesNotExist:
+                return JsonResponse({'error': 'Access Denied'}, status=401)
+            except:
+                return JsonResponse({'error': 'Data not found'}, status=404)
+        else:
+            return JsonResponse({'error': 'Authorization header required'}, status=401)
+    else:
+        return JsonResponse({'error': 'Method not supported'})
