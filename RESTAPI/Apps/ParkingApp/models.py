@@ -52,6 +52,7 @@ class User_ParkingLots(models.Model):
         blank=False,                # Dont allow blank values in this field
         on_delete=models.CASCADE    # If a Parking is deleted, all related User association too
     )
+    relation_id = models.TextField(max_length=100, default='None', null=False, blank=False, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     
 
