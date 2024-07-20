@@ -162,7 +162,7 @@ def Logout_user(request):
 #################################
 ### CRUD PARKING LOTS (ADMIN) ###
 #################################
-# ------------ GET ------------ #
+# ----------- CREATE ---------- #
 @csrf_exempt
 def create_parking_lot(request):
     if request.method == 'POST':
@@ -183,15 +183,18 @@ def create_parking_lot(request):
                 if msg is not None:
                     return JsonResponse({'error': f"{msg}"}, status=400)
                 
-                # Create the new ParkingLot
-                parking_lot = ParkingLot(
-                    name = params_gotten['name'],
-                    max_num_vehicles = params_gotten['max_num_vehicles'],
-                    price_per_hour = params_gotten['price_per_hour'],
-                )
-                # Save the new parking lot in the database
-                parking_lot.save()
-                return JsonResponse({'id': parking_lot.id}, status=201)
+                try:
+                    # Create the new ParkingLot
+                    parking_lot = ParkingLot(
+                        name = params_gotten['name'],
+                        max_num_vehicles = params_gotten['max_num_vehicles'],
+                        price_per_hour = params_gotten['price_per_hour'],
+                    )
+                    # Save the new parking lot in the database
+                    parking_lot.save()
+                    return JsonResponse({'id': parking_lot.id}, status=201)
+                except:
+                    return JsonResponse({'error': 'Item cannot be created'}, status=400)
             else:
                 return JsonResponse({'error': 'Permission Denied'}, status=401)
         else:

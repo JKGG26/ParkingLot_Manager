@@ -16,7 +16,7 @@ class BlackListTokenAccess(models.Model):
 
 
 class ParkingLot(models.Model):
-    name = models.TextField(max_length=30, null=False, blank=False)
+    name = models.TextField(max_length=30, null=False, blank=False, unique=True)
     created_at = models.DateField(auto_now_add=True, blank=False)
     max_num_vehicles = models.IntegerField(null=False, blank=False)
     num_vehicles = models.IntegerField(default=0)
