@@ -33,6 +33,10 @@ class ParkingLot(models.Model):
             'price_per_hour': self.price_per_hour,
             'created_at': self.created_at.isoformat(),
         }
+    
+    def set_fields(self, parameters_dict: dict):
+        for key, value in parameters_dict.items():
+            setattr(self, key, value)
 
 
 class User_ParkingLots(models.Model):
