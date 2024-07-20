@@ -54,6 +54,16 @@ class User_ParkingLots(models.Model):
     )
     relation_id = models.TextField(max_length=100, default='None', null=False, blank=False, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"relation_id: {self.relation_id}"
+    
+    def get_properties(self) -> dict:
+        return {
+            'parking_id': self.parking_id,
+            'user_id': self.user_id,
+            'relation_id': self.relation_id
+        }
     
 
 class VehicleParkingRegister(models.Model):

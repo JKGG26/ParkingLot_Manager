@@ -218,11 +218,20 @@ def list_parking_lots(request):
             user_groups = user.groups.values_list()
             # Get user groups names
             user_groups_names = [group_set[1] for group_set in user_groups]
-            if 'Admin' in user_groups_names:
-                parking_lots = [parking.get_properties() for parking in ParkingLot.objects.all()]
-                return JsonResponse(parking_lots, safe=False, status=200)
-            else:
-                return JsonResponse({'error': 'Permission Denied'}, status=401)
+            try:
+                if 'Admin' in user_groups_names:
+                    parking_lots = [parking.get_properties() for parking in ParkingLot.objects.all()]
+                    return JsonResponse(parking_lots, safe=False, status=200)
+                elif 'Socio' in user_groups_names:
+                    # Get User_ParkingLots relation for current 'Socio'
+                    user_parking_lots = User_ParkingLots.objects.filter(user_id=user.id)
+                    # Get parkingLots
+                    parking_lots = [user_parking.parking_id.get_properties() for user_parking in user_parking_lots]
+                    return JsonResponse(parking_lots, safe=False, status=200)
+                else:
+                    return JsonResponse({'error': 'Permission Denied'}, status=401)
+            except:
+                return JsonResponse({'error': 'Data not found'}, status=404)
         else:
             return JsonResponse({'error': 'Authorization header required'}, status=401)
     else:
