@@ -752,3 +752,48 @@ def top_vehicles_entries_parking(request, top, id):
             return JsonResponse({'error': 'Authorization header required'}, status=401)
     else:
         return JsonResponse({'error': 'Method not supported'})
+
+
+# ---------- GET ALL ---------- #
+def first_time_vehicles_parking(request, id):
+    if request.method == 'GET':
+        auth_header = request.headers.get('Authorization')
+        if auth_header:
+            prefix, token = auth_header.split(' ')
+            user = jwt_authenticate(token)
+            # Check if user was authenticated successfully
+            if user is None:
+                return JsonResponse({'error': 'Access Denied'}, status=401)
+            # Get user groups QuerySet
+            user_groups = user.groups.values_list()
+            # Get user groups names
+            user_groups_names = [group_set[1] for group_set in user_groups]
+            try:
+                if 'Admin' in user_groups_names:
+                    # Check if parking lot exists
+                    parking_lot = ParkingLot.objects.get(id=id)
+                    # Get registered vehicle_plates
+                    registered_vehicles_plates = VehicleParkingHistorical.objects.filter(parking_id=id).values('vehicle_plate').distinct()
+                    # Get first time vehicle_plates currently in the parking
+                    vehicles_entries = VehicleParkingRegister.objects.filter(parking_id=id).exclude(vehicle_plate__in = registered_vehicles_plates).values('vehicle_plate', 'entry_time')
+                    return JsonResponse(list(vehicles_entries), safe=False, status=200)
+                elif 'Socio' in user_groups_names:
+                    # Get User_ParkingLots relation for current 'Socio'
+                    user_parking = User_ParkingLots.objects.get(parking_id=id, user_id=user.id)
+                    # Get registered vehicle_plates
+                    registered_vehicles_plates = VehicleParkingHistorical.objects.filter(parking_id=id).values('vehicle_plate').distinct()
+                    # Get first time vehicle_plates currently in the parking
+                    vehicles_entries = VehicleParkingRegister.objects.filter(parking_id=id).exclude(vehicle_plate__in = registered_vehicles_plates).values('vehicle_plate', 'entry_time')
+                    return JsonResponse(list(vehicles_entries), safe=False, status=200)
+                else:
+                    return JsonResponse({'error': 'Permission Denied'}, status=401)
+            except ParkingLot.DoesNotExist:
+                return JsonResponse({'error': 'Item not found'}, status=404)
+            except User_ParkingLots.DoesNotExist:
+                return JsonResponse({'error': 'Access Denied'}, status=401)
+            except:
+                return JsonResponse({'error': 'Data not found'}, status=404)
+        else:
+            return JsonResponse({'error': 'Authorization header required'}, status=401)
+    else:
+        return JsonResponse({'error': 'Method not supported'})
