@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate
 from django.views import View
 from django.contrib.auth.models import User, Group
+from django.db.models import Count
 
 from datetime import datetime, timezone
 from .authentication import generate_jwt, jwt_authenticate, jwt_decode
@@ -647,6 +648,57 @@ def get_vehicles_entries(request, id):
                 return JsonResponse({'error': 'Item not found'}, status=404)
             except User_ParkingLots.DoesNotExist:
                 return JsonResponse({'error': 'Access Denied'}, status=401)
+            except:
+                return JsonResponse({'error': 'Data not found'}, status=404)
+        else:
+            return JsonResponse({'error': 'Authorization header required'}, status=401)
+    else:
+        return JsonResponse({'error': 'Method not supported'})
+    
+
+###################################
+########### INDICATORS ############
+###################################
+# - Top 10 all vehicles entries - #
+def top_vehicles_entries(request, top):
+    if request.method == 'GET':
+        auth_header = request.headers.get('Authorization')
+        if auth_header:
+            prefix, token = auth_header.split(' ')
+            user = jwt_authenticate(token)
+            # Check if user was authenticated successfully
+            if user is None:
+                return JsonResponse({'error': 'Access Denied'}, status=401)
+            # Get user groups QuerySet
+            user_groups = user.groups.values_list()
+            # Get user groups names
+            user_groups_names = [group_set[1] for group_set in user_groups]
+            try:
+                if 'Admin' in user_groups_names:
+                    # get counts per vehicle_plate from VehicleParkingHistorical table
+                    """ SELECT vehicle_plate, COUNT(*) AS num_entries
+                        FROM public."ParkingApp_vehicleparkinghistorical"
+                        GROUP BY vehicle_plate
+                        ORDER BY num_entries DESC, vehicle_plate;
+                    """
+                    vehicle_entry_counts = VehicleParkingHistorical.objects.values('vehicle_plate').annotate(number_registers=Count('id')).order_by('-number_registers', 'vehicle_plate')
+                    return JsonResponse(list(vehicle_entry_counts)[:top], safe=False, status=200)
+                elif 'Socio' in user_groups_names:
+                    # Get User_ParkingLots relation for current 'Socio'
+                    parking_lots_ids = [user_parking.parking_id.id for user_parking in User_ParkingLots.objects.filter(user_id=user.id)]
+                    # Get counts per vehicle_plate from VehicleParkingHistorical table only for the associated parking lots
+                    """ SELECT vehicle_plate, COUNT(*) AS num_entries
+                        FROM (
+                            SELECT * FROM public."ParkingApp_vehicleparkinghistorical"
+                            WHERE parking_id IN (id1, id2, ... idn)
+                        )
+                        GROUP BY vehicle_plate
+                        ORDER BY num_entries DESC, vehicle_plate;
+                    """
+                    vehicle_entry_counts = list(VehicleParkingHistorical.objects.filter(parking_id__in = parking_lots_ids).values('vehicle_plate').annotate(number_registers=Count('id')).order_by('-number_registers', 'vehicle_plate'))
+                    return JsonResponse(vehicle_entry_counts[:top], safe=False, status=200)
+                else:
+                    return JsonResponse({'error': 'Permission Denied'}, status=401)
             except:
                 return JsonResponse({'error': 'Data not found'}, status=404)
         else:
