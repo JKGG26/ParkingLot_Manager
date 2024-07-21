@@ -14,6 +14,8 @@ from .utils.data_utils import utc_to_local, local_to_utc
 from .models import BlackListTokenAccess, ParkingLot, User_ParkingLots
 from .models import VehicleParkingRegister, VehicleParkingHistorical, ParkingDailyIncomes
 
+import json
+
 
 class ProtectedView(View):
     def get(self, request):
@@ -570,7 +572,6 @@ def register_vehicle_exit(request):
                 except User_ParkingLots.DoesNotExist:
                     return JsonResponse({'error': f'Access Denied'}, status=404)
                 except Exception as exc:
-                    print(exc)
                     return JsonResponse({'error': f'Item cannot be registered'}, status=400)
             else:
                 return JsonResponse({'error': 'Permission Denied'}, status=401)
@@ -853,7 +854,6 @@ def incomes_last_days_parking(request, days, id):
             except User_ParkingLots.DoesNotExist:
                 return JsonResponse({'error': 'Access Denied'}, status=401)
             except Exception as exc:
-                print(exc)
                 return JsonResponse({'error': 'Data not found'}, status=404)
         else:
             return JsonResponse({'error': 'Authorization header required'}, status=401)
@@ -918,7 +918,6 @@ def top_socios_vehicles_entries(request, top, days):
             except User_ParkingLots.DoesNotExist:
                 return JsonResponse({'error': 'Access Denied'}, status=401)
             except Exception as exc:
-                print(exc)
                 return JsonResponse({'error': 'Data not found'}, status=404)
         else:
             return JsonResponse({'error': 'Authorization header required'}, status=401)
@@ -930,3 +929,52 @@ def top_3_socios_vehicles_entries_week(request):
     current_date = date.today()
     current_datetime = datetime(current_date.year, current_date.month, current_date.day,0,0,0,0)
     return top_socios_vehicles_entries(request, 3, current_datetime.weekday())
+
+
+# ----- INCOMES PARKING LOTS ----- #
+def top_parking_lots_incomes(request, top):
+    if request.method == 'GET':
+        auth_header = request.headers.get('Authorization')
+        if auth_header:
+            prefix, token = auth_header.split(' ')
+            user = jwt_authenticate(token)
+            # Check if user was authenticated successfully
+            if user is None:
+                return JsonResponse({'error': 'Access Denied'}, status=401)
+            # Get user groups QuerySet
+            user_groups = user.groups.values_list()
+            # Get user groups names
+            user_groups_names = [group_set[1] for group_set in user_groups]
+            try:
+                if 'Admin' in user_groups_names:
+                    # Get current datetime
+                    current_date = date.today()
+                    current_datetime = datetime(current_date.year, current_date.month, current_date.day,0,0,0,0)
+                    # Get the start datetime like today - num_days to get data
+                    current_date = date.today()
+                    current_datetime = datetime(current_date.year, current_date.month, current_date.day,0,0,0,0)
+                    start_date = local_to_utc(current_datetime) - timedelta(days=current_datetime.weekday())
+                    # Get the end datetime like today to the end of day
+                    end_date = local_to_utc(current_datetime + timedelta(days=1))
+                    # Get registered vehicle_plates
+                    registered_incomes_date = VehicleParkingHistorical.objects.filter(
+                        exit_time__gte = start_date, exit_time__lt = end_date
+                        ).values('parking_id').annotate(total_incomes=Sum('income')).order_by('-total_incomes')
+                    # Set the range of date of gotten data
+                    registered_incomes_date = [{**rid, 'start_date': start_date.isoformat()[:10],
+                                                'end_date': end_date.isoformat()[:10]} for rid in registered_incomes_date]
+                    # Get first time vehicle_plates currently in the parking
+                    return JsonResponse(registered_incomes_date[:top], safe=False, status=200)
+                else:
+                    return JsonResponse({'error': 'Permission Denied'}, status=401)
+            except ParkingLot.DoesNotExist:
+                return JsonResponse({'error': 'Item not found'}, status=404)
+            except User_ParkingLots.DoesNotExist:
+                return JsonResponse({'error': 'Access Denied'}, status=401)
+            except Exception as exc:
+                return JsonResponse({'error': 'Data not found'}, status=404)
+        else:
+            return JsonResponse({'error': 'Authorization header required'}, status=401)
+    else:
+        return JsonResponse({'error': 'Method not supported'})
+    
