@@ -7,6 +7,7 @@ from .views import set_socio_parking, delete_user_parking_relation
 from .views import register_vehicle_entry, register_vehicle_exit, list_vehicles_entries, get_vehicles_entries
 from .views import top_vehicles_entries, top_vehicles_entries_parking, first_time_vehicles_parking, incomes_last_days_parking
 from .views import top_socios_vehicles_entries, top_3_socios_vehicles_entries_week, top_parking_lots_incomes
+from .views import send_mail
 
 
 urlpatterns = [
@@ -34,4 +35,5 @@ urlpatterns = [
     path('api/top-<int:top>-socios-vehicles-entries/last-<int:days>-days/', top_socios_vehicles_entries, name='top_socios_vehicles_entries'),
     path('api/top-socios-vehicles-entries/', top_3_socios_vehicles_entries_week, name='top_socios_3_vehicles_entries_week'),
     path('api/top-<int:top>-parking-lots-incomes/', top_parking_lots_incomes, name='top_parking_lots_incomes'),
+    path('api/send-mail/', send_mail, name='send_mail'),
 ]

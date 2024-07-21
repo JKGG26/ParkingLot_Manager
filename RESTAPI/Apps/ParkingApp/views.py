@@ -14,7 +14,7 @@ from .utils.data_utils import utc_to_local, local_to_utc
 from .models import BlackListTokenAccess, ParkingLot, User_ParkingLots
 from .models import VehicleParkingRegister, VehicleParkingHistorical, ParkingDailyIncomes
 
-import json
+import requests
 
 
 class ProtectedView(View):
@@ -45,7 +45,6 @@ class AdminOnlyView(View):
             user_groups = user.groups.values_list()
             # Get user groups names
             user_groups_names = [group_set[1] for group_set in user_groups]
-            print(user_groups_names)
             if 'Admin' in user_groups_names:
                 return JsonResponse({'message': f'Hello, Admin {user.username}!'})
             else:
@@ -67,7 +66,6 @@ class SocioOnlyView(View):
             user_groups = user.groups.values_list()
             # Get user groups names
             user_groups_names = [group_set[1] for group_set in user_groups]
-            print(user_groups_names)
             if user is not None and 'Socio' in user_groups_names:
                 return JsonResponse({'message': f'Hello, Socio {user.username}!'})
             else:
@@ -114,7 +112,6 @@ def RegisterSocio(request):
             # Get credentials for the new 'Socio' to add
             params_required = ['username', 'password']
             params_gotten, msg = get_post_params(request, params_required)
-            print(params_gotten, msg)
             if msg is not None:
                 return JsonResponse({'error': f"{msg}"}, status=400)
             try:
@@ -545,7 +542,6 @@ def register_vehicle_exit(request):
                     # Check if parking gotten is associated to current 'Socio'.
                     # If relation does not exist an Exception is raised (Variable not used)
                     user_parking_lots = User_ParkingLots.objects.get(parking_id=parking_lot.id, user_id=user.id)
-                    print(user_parking_lots)
                     exit_time = datetime.now(timezone.utc)
                     delta_time = exit_time - vehicle_entry.entry_time#.replace(tzinfo=None)
                     hours = 1 + int(delta_time.total_seconds() / 3600)
@@ -978,3 +974,67 @@ def top_parking_lots_incomes(request, top):
     else:
         return JsonResponse({'error': 'Method not supported'})
     
+
+@csrf_exempt
+def send_mail(request):
+    if request.method == 'POST':
+        auth_header = request.headers.get('Authorization')
+        if auth_header:
+            prefix, token = auth_header.split(' ')
+            user = jwt_authenticate(token)
+            # Check if user was authenticated successfully
+            if user is None:
+                return JsonResponse({'error': 'Access Denied'}, status=401)
+            # Get user groups QuerySet
+            user_groups = user.groups.values_list()
+            # Get user groups names
+            user_groups_names = [group_set[1] for group_set in user_groups]
+            try:
+                if 'Admin' in user_groups_names:
+                    params_required = ['email', 'vehicle_plate', 'message', 'parkingLotName']
+                    body_dict, msg = get_json_body(request, params_required)
+                    if len(body_dict) == 0:
+                        if msg is None:
+                            return JsonResponse({'error': 'Invalid JSON'}, status=402)
+                        return JsonResponse({'error': msg}, status=402)
+                    # Check if username exists
+                    user_recp = User.objects.get(username=body_dict['email'])
+                    # Check if vehicle plate is in parking lot
+                    vehicle_entry = VehicleParkingRegister.objects.get(vehicle_plate=body_dict['vehicle_plate'])
+                    # Check if parking Lot name exists
+                    parking_lot = ParkingLot.objects.get(name=body_dict['parkingLotName'])
+                    # Check if vehicle plate is into specified parking lot
+                    if vehicle_entry.parking_id.id != parking_lot.id:
+                        return JsonResponse({'error': 'Vehicle plate is not specified parking lot'}, status=400)
+                    # Check if specified 'Socio' is associated to the parking lot where is the vehicle_plate
+                    user_parking = User_ParkingLots.objects.get(parking_id=parking_lot.id, user_id=user_recp.id)
+                    # Make request to microservice to send
+                    headers = {
+                        'Content-Type': 'application/json',
+                    }
+                    try:
+                        mservice_response = requests.post(
+                            'http://127.0.0.1:5000/api/send_email/',
+                            headers=headers,
+                            json=body_dict
+                        )
+                    except:
+                        return JsonResponse({'error': 'Email service is not available'}, status=500)
+                    
+                    return JsonResponse(mservice_response.json(), status=mservice_response.status_code)
+                else:
+                    return JsonResponse({'error': 'Permission Denied'}, status=401)
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'User not found'}, status=404)
+            except VehicleParkingRegister.DoesNotExist:
+                return JsonResponse({'error': 'Vehicle Plate not foun'}, status=404)
+            except ParkingLot.DoesNotExist:
+                return JsonResponse({'error': 'Parking Lot not found'}, status=404)
+            except User_ParkingLots.DoesNotExist:
+                return JsonResponse({'error': 'Recipient socio is not related to parking lot'}, status=401)
+            except Exception as exc:
+                return JsonResponse({'error': 'Data not found'}, status=404)
+        else:
+            return JsonResponse({'error': 'Authorization header required'}, status=401)
+    else:
+        return JsonResponse({'error': 'Method not supported'})
