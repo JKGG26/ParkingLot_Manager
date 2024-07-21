@@ -859,3 +859,74 @@ def incomes_last_days_parking(request, days, id):
             return JsonResponse({'error': 'Authorization header required'}, status=401)
     else:
         return JsonResponse({'error': 'Method not supported'})
+
+
+# ------ TOP SOCIOS VEHICLES ------ #
+def top_socios_vehicles_entries(request, top, days):
+    if request.method == 'GET':
+        auth_header = request.headers.get('Authorization')
+        if auth_header:
+            prefix, token = auth_header.split(' ')
+            user = jwt_authenticate(token)
+            # Check if user was authenticated successfully
+            if user is None:
+                return JsonResponse({'error': 'Access Denied'}, status=401)
+            # Get user groups QuerySet
+            user_groups = user.groups.values_list()
+            # Get user groups names
+            user_groups_names = [group_set[1] for group_set in user_groups]
+            try:
+                if 'Admin' in user_groups_names:
+                    # Get current datetime
+                    current_date = date.today()
+                    current_datetime = datetime(current_date.year, current_date.month, current_date.day,0,0,0,0)
+                    # Get the start datetime like today - num_days to get data
+                    start_date = local_to_utc(current_datetime) - timedelta(days=days)
+                    # Get the end datetime like today to the end of day
+                    end_date = local_to_utc(current_datetime + timedelta(days=1))
+                    # Get registered vehicle_plates
+                    vehicles_entries_parking = VehicleParkingHistorical.objects.filter(
+                        exit_time__gte = start_date, exit_time__lt = end_date
+                        ).values('parking_id').annotate(vehicles_entries=Count('parking_id')).order_by('-vehicles_entries')
+                    # Merge parking lots vehicles entries with properly 'Socios'
+                    user_parkings = User_ParkingLots.objects.values('parking_id', 'user_id')
+                    # Get map dict of parkings per user
+                    user_parkings_map = {}
+                    for up in user_parkings:
+                        parking_id, user_id = up['parking_id'], up['user_id']
+                        if user_id in list(user_parkings_map.keys()):
+                            user_parkings_map[user_id].append(parking_id)
+                        else:
+                            user_parkings_map[user_id] = [parking_id]
+
+                    users_vehicles_entries = [
+                        {
+                            'user_id': user_id,
+                            'username': User.objects.get(id=user_id).username,
+                            'total_vehicles_entries': sum([vep['vehicles_entries'] for vep in vehicles_entries_parking if vep['parking_id'] in parking_ids]),
+                            'start_date': start_date.isoformat()[:10],
+                            'end_date': end_date.isoformat()[:10]
+                        }
+                        for user_id, parking_ids in user_parkings_map.items()
+                    ]
+                    # Get first time vehicle_plates currently in the parking
+                    return JsonResponse(users_vehicles_entries[:top], safe=False, status=200)
+                else:
+                    return JsonResponse({'error': 'Permission Denied'}, status=401)
+            except ParkingLot.DoesNotExist:
+                return JsonResponse({'error': 'Item not found'}, status=404)
+            except User_ParkingLots.DoesNotExist:
+                return JsonResponse({'error': 'Access Denied'}, status=401)
+            except Exception as exc:
+                print(exc)
+                return JsonResponse({'error': 'Data not found'}, status=404)
+        else:
+            return JsonResponse({'error': 'Authorization header required'}, status=401)
+    else:
+        return JsonResponse({'error': 'Method not supported'})
+
+
+def top_3_socios_vehicles_entries_week(request):
+    current_date = date.today()
+    current_datetime = datetime(current_date.year, current_date.month, current_date.day,0,0,0,0)
+    return top_socios_vehicles_entries(request, 3, current_datetime.weekday())
