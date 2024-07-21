@@ -595,8 +595,13 @@ def list_vehicles_entries(request):
             # Get user groups names
             user_groups_names = [group_set[1] for group_set in user_groups]
             try:
+                # Define a lambda function to modify inner datetime field
+                lbd_func_utc_local = lambda x, field: {**x, field:utc_to_local(x[field])}
+
                 if 'Admin' in user_groups_names:
                     vehicles_entries = [vehicle_entry.get_properties() for vehicle_entry in VehicleParkingRegister.objects.all()]
+                    # Apply lambda function to transform every  'entry_time' value to local timezone
+                    vehicles_entries = [lbd_func_utc_local(ve, 'entry_time') for ve in vehicles_entries]
                     return JsonResponse(vehicles_entries, safe=False, status=200)
                 elif 'Socio' in user_groups_names:
                     # Get User_ParkingLots relation for current 'Socio'
@@ -604,7 +609,9 @@ def list_vehicles_entries(request):
                     # Get parkingLots
                     vehicles_entries = []
                     for parking_id in parking_lots_ids:
-                        vehicles_entries.extend([vehicle_entry.get_properties() for vehicle_entry in VehicleParkingRegister.objects.filter(parking_id = parking_id)])
+                        vehicles_entries_parking = [vehicle_entry.get_properties() for vehicle_entry in VehicleParkingRegister.objects.filter(parking_id = parking_id)]
+                        # Apply lambda function to transform every  'entry_time' value to local timezone
+                        vehicles_entries.extend([lbd_func_utc_local(ve, 'entry_time') for ve in vehicles_entries_parking])
                     return JsonResponse(vehicles_entries, safe=False, status=200)
                 else:
                     return JsonResponse({'error': 'Permission Denied'}, status=401)
@@ -631,17 +638,22 @@ def get_vehicles_entries(request, id):
             # Get user groups names
             user_groups_names = [group_set[1] for group_set in user_groups]
             try:
+                # Define a lambda function to modify inner datetime field
+                lbd_func_utc_local = lambda x, field: {**x, field:utc_to_local(x[field])}
+                    
                 if 'Admin' in user_groups_names:
                     # Check if parking_id to get data exists in DB (Only for ADMIN)
                     parking_lot = ParkingLot.objects.get(id=id)
                     # Get all records of vehicles entries for parking_id
                     vehicles_entries = [vehicle_entry.get_properties() for vehicle_entry in VehicleParkingRegister.objects.filter(parking_id=id)]
+                    vehicles_entries = [lbd_func_utc_local(ve, 'entry_time') for ve in vehicles_entries]
                     return JsonResponse(vehicles_entries, safe=False, status=200)
                 elif 'Socio' in user_groups_names:
                     # Check if current 'Socio' has assigned the parking lot to get data
                     user_parking_lot = User_ParkingLots.objects.get(parking_id=id, user_id=user.id)
                     # Get all records of vehicles entries for parking_id
                     vehicles_entries = [vehicle_entry.get_properties() for vehicle_entry in VehicleParkingRegister.objects.filter(parking_id=id)]
+                    vehicles_entries = [lbd_func_utc_local(ve, 'entry_time') for ve in vehicles_entries]
                     return JsonResponse(vehicles_entries, safe=False, status=200)
                 else:
                     return JsonResponse({'error': 'Permission Denied'}, status=401)
