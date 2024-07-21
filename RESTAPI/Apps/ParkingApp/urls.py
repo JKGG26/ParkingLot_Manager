@@ -5,7 +5,7 @@ from .views import obtain_jwt_token, RegisterSocio, Logout_user     # User manag
 from .views import create_parking_lot, list_parking_lots, get_parking_lot, delete_parking_lot, edit_parking_lot
 from .views import set_socio_parking, delete_user_parking_relation
 from .views import register_vehicle_entry, register_vehicle_exit, list_vehicles_entries, get_vehicles_entries
-from .views import top_vehicles_entries, top_vehicles_entries_parking, first_time_vehicles_parking
+from .views import top_vehicles_entries, top_vehicles_entries_parking, first_time_vehicles_parking, incomes_last_days_parking
 
 
 urlpatterns = [
@@ -29,4 +29,5 @@ urlpatterns = [
     path('api/top-<int:top>-vehicles-entries/', top_vehicles_entries, name='top_vehicles_entries'),
     path('api/top-<int:top>-vehicles-entries/<int:id>', top_vehicles_entries_parking, name='top_vehicles_entries_parking'),
     path('api/first-time-vehicles/<int:id>', first_time_vehicles_parking, name='first_time_vehicles_parking'),
+    path('api/incomes-last-<int:days>-days-parking-lot/<int:id>', incomes_last_days_parking, name='incomes_last_days_parking'),
 ]

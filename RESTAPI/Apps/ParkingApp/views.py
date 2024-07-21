@@ -4,11 +4,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate
 from django.views import View
 from django.contrib.auth.models import User, Group
-from django.db.models import Count
+from django.db.models import Count, Sum
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta, date
 from .authentication import generate_jwt, jwt_authenticate, jwt_decode
 from .utils.http_utils import get_post_params, get_json_body
+from .utils.data_utils import utc_to_local, local_to_utc
 
 from .models import BlackListTokenAccess, ParkingLot, User_ParkingLots
 from .models import VehicleParkingRegister, VehicleParkingHistorical, ParkingDailyIncomes
@@ -754,7 +755,7 @@ def top_vehicles_entries_parking(request, top, id):
         return JsonResponse({'error': 'Method not supported'})
 
 
-# ---------- GET ALL ---------- #
+# ---------- FIRST TIME ---------- #
 def first_time_vehicles_parking(request, id):
     if request.method == 'GET':
         auth_header = request.headers.get('Authorization')
@@ -792,6 +793,55 @@ def first_time_vehicles_parking(request, id):
             except User_ParkingLots.DoesNotExist:
                 return JsonResponse({'error': 'Access Denied'}, status=401)
             except:
+                return JsonResponse({'error': 'Data not found'}, status=404)
+        else:
+            return JsonResponse({'error': 'Authorization header required'}, status=401)
+    else:
+        return JsonResponse({'error': 'Method not supported'})
+
+
+# ------ INCOMES PARKING LOT ------ #
+def incomes_last_days_parking(request, days, id):
+    if request.method == 'GET':
+        auth_header = request.headers.get('Authorization')
+        if auth_header:
+            prefix, token = auth_header.split(' ')
+            user = jwt_authenticate(token)
+            # Check if user was authenticated successfully
+            if user is None:
+                return JsonResponse({'error': 'Access Denied'}, status=401)
+            # Get user groups QuerySet
+            user_groups = user.groups.values_list()
+            # Get user groups names
+            user_groups_names = [group_set[1] for group_set in user_groups]
+            try:
+                if 'Socio' in user_groups_names:
+                    # Get User_ParkingLots relation for current 'Socio'
+                    user_parking = User_ParkingLots.objects.get(parking_id=id, user_id=user.id)
+                    # Get current datetime
+                    current_date = date.today()
+                    current_datetime = datetime(current_date.year, current_date.month, current_date.day,0,0,0,0)
+                    # Get the start datetime like today - num_days to get data
+                    start_date = local_to_utc(current_datetime) - timedelta(days=days)
+                    # Get the end datetime like today to the end of day
+                    end_date = local_to_utc(current_datetime + timedelta(days=1))
+                    # Get registered vehicle_plates
+                    registered_incomes_date = VehicleParkingHistorical.objects.filter(
+                        parking_id=id, exit_time__gte = start_date, exit_time__lt = end_date
+                        ).aggregate(total_incomes=Sum('income'))
+                    # Set the range of date of gotten data
+                    registered_incomes_date['start_date'] = start_date.isoformat()[:10]
+                    registered_incomes_date['end_date'] = end_date.isoformat()[:10]
+                    # Get first time vehicle_plates currently in the parking
+                    return JsonResponse(registered_incomes_date, safe=False, status=200)
+                else:
+                    return JsonResponse({'error': 'Permission Denied'}, status=401)
+            except ParkingLot.DoesNotExist:
+                return JsonResponse({'error': 'Item not found'}, status=404)
+            except User_ParkingLots.DoesNotExist:
+                return JsonResponse({'error': 'Access Denied'}, status=401)
+            except Exception as exc:
+                print(exc)
                 return JsonResponse({'error': 'Data not found'}, status=404)
         else:
             return JsonResponse({'error': 'Authorization header required'}, status=401)
