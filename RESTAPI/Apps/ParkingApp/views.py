@@ -730,6 +730,8 @@ def top_vehicles_entries_parking(request, top, id):
                         GROUP BY vehicle_plate
                         ORDER BY num_entries DESC, vehicle_plate;
                     """
+                    # Check if parking lot exists (Only for ADMIN)
+                    parking_lot = ParkingLot.objects.get(id=id)
                     vehicle_entry_counts = VehicleParkingHistorical.objects.filter(parking_id = id).values('vehicle_plate').annotate(number_registers=Count('id')).order_by('-number_registers', 'vehicle_plate')
                     return JsonResponse(list(vehicle_entry_counts)[:top], safe=False, status=200)
                 elif 'Socio' in user_groups_names:
@@ -740,6 +742,8 @@ def top_vehicles_entries_parking(request, top, id):
                     return JsonResponse(list(vehicle_entry_counts)[:top], safe=False, status=200)
                 else:
                     return JsonResponse({'error': 'Permission Denied'}, status=401)
+            except ParkingLot.DoesNotExist:
+                return JsonResponse({'error': 'Item not found'}, status=404)
             except User_ParkingLots.DoesNotExist:
                 return JsonResponse({'error': 'Access Denied'}, status=401)
             except:
