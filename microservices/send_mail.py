@@ -1,10 +1,13 @@
 from flask import Flask, request, jsonify, Response
 from werkzeug.exceptions import BadRequest
 import logging
+from flask_cors import CORS
+
 
 # Flask constructor takes the name of 
 # current module (__name__) as argument.
 app = Flask(__name__)
+CORS(app)   # Allows all origins
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
