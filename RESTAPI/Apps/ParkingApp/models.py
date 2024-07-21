@@ -102,6 +102,18 @@ class VehicleParkingHistorical(models.Model):
     hours = models.SmallIntegerField(null=False, blank=False)
     income = models.DecimalField(max_digits=10, decimal_places=2, null=False, blank=False)
 
+    def get_properties(self):
+        return {
+            "vehicle_plate": self.vehicle_plate,
+            "parking_id": self.parking_id.id,
+            "entry_time": self.entry_time,
+            "parking_spot": self.parking_spot,
+            "remarks": self.remarks,
+            "exit_time": self.exit_time,
+            "hours": self.hours,
+            "income": self.income
+        }
+
 
 class ParkingDailyIncomes(models.Model):
     parking_id = models.ForeignKey(
