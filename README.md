@@ -131,3 +131,14 @@ The Parking Management System is a comprehensive solution for managing parking l
     cd microservices
     python send_mail.py
     ```
+
+9. **Use RESTAPI**:
+
+  - `Login` Get `Authorization` token using `/api/login/` and admin credentials
+  - `Set` `Authorization` token in headers starting with `Bearer <token>` to access to another endpoints as 'Admin'
+  - `Create` Socio users, parking lots, socio-parking relations
+  - `Login` Get `Authorization` token using `/api/login/` and Socios credentials
+  - `Set` `Authorization` token in headers starting with `Bearer <token>` to access to another endpoints as 'Socio'
+  - `Register` vehicles entries and exits
+  - `Get` indicators, data and manage data using the endpoints accordint to the role of Authorization token used in header
+  - `Logout` users using `/api/logout/`
