@@ -12,7 +12,7 @@ from .utils.http_utils import get_post_params, get_json_body
 from .utils.data_utils import utc_to_local, local_to_utc
 
 from .models import BlackListTokenAccess, ParkingLot, User_ParkingLots
-from .models import VehicleParkingRegister, VehicleParkingHistorical, ParkingDailyIncomes
+from .models import VehicleParkingRegister, VehicleParkingHistorical
 
 import requests
 import json

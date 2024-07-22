@@ -113,15 +113,3 @@ class VehicleParkingHistorical(models.Model):
             "hours": self.hours,
             "income": self.income
         }
-
-
-class ParkingDailyIncomes(models.Model):
-    parking_id = models.ForeignKey(
-        ParkingLot,                 # Model (Table) to set foreign key relation
-        null=False,                 # Dont allow null values in this field
-        blank=False,                # Dont allow blank values in this field
-        on_delete=models.DO_NOTHING # If a User is deleted, all related inactive tokens too
-    )
-    date = models.DateField(null=False, blank=False)
-    num_inputs = models.BigIntegerField(default=0)
-    incomes = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
