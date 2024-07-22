@@ -145,6 +145,4 @@ The Parking Management System is a comprehensive solution for managing parking l
 
   ## Database ERD
 
-    Database ERD can be found in `docs` folder
-
-    ![ERD](docs/ERD-ParkinLotsDB.png)
+    Database ERD can be found in `docs/ERD-ParkinLotsDB.png` folder
