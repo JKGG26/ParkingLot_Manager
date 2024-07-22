@@ -142,3 +142,9 @@ The Parking Management System is a comprehensive solution for managing parking l
   - `Register` vehicles entries and exits
   - `Get` indicators, data and manage data using the endpoints accordint to the role of Authorization token used in header
   - `Logout` users using `/api/logout/`
+
+  ## Database ERD
+
+    Database ERD can be found in `docs` folder
+
+    ![ERD](docs/ERD-ParkinLotsDB.png)
