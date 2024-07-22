@@ -254,20 +254,24 @@ def get_parking_lot(request, id):
             user_groups = user.groups.values_list()
             # Get user groups names
             user_groups_names = [group_set[1] for group_set in user_groups]
-            if 'Admin' in user_groups_names:
-                try:
+            try:
+                if 'Admin' in user_groups_names:
                     parking_lot = ParkingLot.objects.get(id=id)
                     return JsonResponse(parking_lot.get_properties(), status=200)
-                except:
-                    return JsonResponse({'error': 'Item not found'}, status=404)
-            elif 'Socio' in user_groups_names:
-                # Get parking lots associated to current 'Socio'
-                #parking_lots_associated = User_ParkingLots.objects.get(user_id=user.id)
-                #parking_lots_ids = [parking_rel.parking_lot_id]
-                parking_lot = ParkingLot.objects.get(id=id)
-                return JsonResponse(parking_lot.get_properties(), status=200)
-            else:
-                return JsonResponse({'error': 'Permission Denied'}, status=401)
+                elif 'Socio' in user_groups_names:
+                    # Get parking lots associated to current 'Socio'
+                    user_parkings = User_ParkingLots.objects.get(parking_id=id, user_id=user.id)
+                    #parking_lots_ids = [parking_rel.parking_lot_id]
+                    parking_lot = ParkingLot.objects.get(id=id)
+                    return JsonResponse(parking_lot.get_properties(), status=200)
+                else:
+                    return JsonResponse({'error': 'Permission Denied'}, status=401)
+            except ParkingLot.DoesNotExist:
+                return JsonResponse({'error': 'Item not found'}, status=404)
+            except User_ParkingLots.DoesNotExist:
+                return JsonResponse({'error': 'Access Denied'}, status=401)
+            except:
+                return JsonResponse({'error': 'Item not found'}, status=404)
         else:
             return JsonResponse({'error': 'Authorization header required'}, status=401)
     else:
