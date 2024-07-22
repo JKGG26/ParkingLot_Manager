@@ -79,24 +79,13 @@ The Parking Management System is a comprehensive solution for managing parking l
     pip install -r requirements.txt
     ```
 
-4. **Set Up Environment Variables**:
-
-    Create a .env file in the root directory with the following content:
-
-    ```bash
-    SECRET_KEY=<your-secret-key>
-    DJANGO_SETTINGS_MODULE=RESTAPI.settings
-    ADMIN_USER=<admin-username>
-    ADMIN_PWD=<admin-password>
-    ```
-
-5. **Set Up the Database**:
+4. **Set Up the Database**:
 
     Ensure PostgreSQL is installed and running.
 
     Create a PostgreSQL database and user, and update the database settings in RESTAPI/settings.py.
 
-6. **Set Up the environment variables**:
+5. **Set Up the environment variables**:
 
     Set up environtment variables for database connection and admin credentials:
 
@@ -120,7 +109,7 @@ The Parking Management System is a comprehensive solution for managing parking l
     $env:ADMIN_PWD="admin"
     ```
 
-7. **Apply Django Migrations**:
+6. **Apply Django Migrations**:
 
     ```bash
     cd RESTAPI
@@ -128,12 +117,12 @@ The Parking Management System is a comprehensive solution for managing parking l
     python manage.py migrate
     ```
 
-8. **Run the Django Server**:
+7. **Run the Django Server**:
     ```bash
     python manage.py runserver
     ```
 
-9. **Run the Flask Microservice to send Emails**:
+8. **Run the Flask Microservice to send Emails**:
 
     In other terminal out of RESTAPI directory, activate the python 'env' and run the microservices/send_mail.py file with python:
 
