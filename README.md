@@ -19,39 +19,39 @@ The Parking Management System is a comprehensive solution for managing parking l
 
 - **API Endpoints**:
   - **User Management**:
-    - `api/register-socio/`: Register a new Socio user.
-    - `api/login/`: Obtain a JWT token.
-    - `api/logout/`: Logout and invalidate the JWT token.
+    - `(ADMIN)` `api/register-socio/`: Register a new Socio user.
+    - `(ALL)` `api/login/`: Obtain a JWT token.
+    - `(ALL)` `api/logout/`: Logout and invalidate the JWT token.
   
   - **Parking Lots**:
-    - `api/create-parking-lot/`: Create a new parking lot.
-    - `api/parking-lots/`: List all parking lots.
-    - `api/parking-lots/<int:id>`: Get details of a specific parking lot.
-    - `api/delete-parking-lot/<int:id>`: Delete a specific parking lot.
-    - `api/edit-parking-lot/<int:id>`: Edit a specific parking lot.
+    - `(ADMIN` `api/create-parking-lot/`: Create a new parking lot.
+    - `(ADMIN)` `api/delete-parking-lot/<int:id>`: Delete a specific parking lot.
+    - `(ADMIN)` `api/edit-parking-lot/<int:id>`: Edit a specific parking lot.
+    - `(ALL)` `api/parking-lots/`: List all associated parking lots.
+    - `(ALL)` `api/parking-lots/<int:id>`: Get details of a specific associated parking lot.
 
   - **User-Parking Relations**:
-    - `api/set-socio-parking/`: Associate a Socio with a parking lot.
-    - `api/delete-socio-parking/<int:id>`: Remove a Socio from a parking lot.
+    - `(ADMIN)` `api/set-socio-parking/`: Associate a Socio with a parking lot.
+    - `(ADMIN)` `api/delete-socio-parking/<int:id>`: Remove a Socio from a parking lot.
   
   - **Vehicle Management**:
-    - `api/register-vehicle-entry/`: Register a vehicle entry into a parking lot.
-    - `api/register-vehicle-exit/`: Register a vehicle exit from a parking lot.
-    - `api/vehicles-entries/`: List all vehicle entries.
-    - `api/vehicles-entries/<int:id>`: Get vehicle entries for a specific parking lot.
+    - `(SOCIO)` `api/register-vehicle-entry/`: Register a vehicle entry into a parking lot.
+    - `(SOCIO)` `api/register-vehicle-exit/`: Register a vehicle exit from a parking lot.
+    - `(ALL)` `api/vehicles-entries/`: List all vehicle entries from associated parking lots.
+    - `(ALL)` `api/vehicles-entries/<int:id>`: Get vehicle entries for a specific associated parking lot.
 
   - **Indicators and Statistics**:
-    - `api/top-<int:top>-vehicles-entries/`: Get top vehicles by entries.
-    - `api/top-<int:top>-vehicles-entries/<int:id>`: Get top vehicles by entries for a specific parking lot.
-    - `api/first-time-vehicles/<int:id>`: Get first-time vehicles for a specific parking lot.
-    - `api/incomes-last-<int:days>-days-parking-lot/<int:id>`: Get income data for the last X days for a specific parking lot.
-    - `api/incomes-parking-lot/<int:id>`: Get summary income data for a specific parking lot.
-    - `api/top-<int:top>-socios-vehicles-entries/last-<int:days>-days/`: Get top Socios by vehicle entries for the last X days.
-    - `api/top-socios-vehicles-entries/`: Get top Socios by vehicle entries for the week.
-    - `api/top-<int:top>-parking-lots-incomes/`: Get top parking lots by income.
+    - `(ADMIN)` `api/top-<int:top>-vehicles-entries/`: Get top N vehicles by entries.
+    - `(ADMIN)` `api/top-<int:top>-vehicles-entries/<int:id>`: Get top N vehicles by entries for a specific parking lot.
+    - `(ADMIN)` `api/first-time-vehicles/<int:id>`: Get first-time vehicles for a specific parking lot.
+    - `(SOCIO)` `api/incomes-parking-lot/<int:id>`: Get summary income data for a specific parking lot in current day, week, month and year.
+    - `(SOCIO)` `api/incomes-last-<int:days>-days-parking-lot/<int:id>`: Get income data for the last X days for a specific parking lot.
+    - `(ADMIN)` `api/top-socios-vehicles-entries/`: Get top 3 Socios by vehicle entries for the week.
+    - `(ADMIN)` `api/top-<int:top>-socios-vehicles-entries/last-<int:days>-days/`: Get top N Socios by vehicle entries for the last X days.
+    - `(ADMIN)` `api/top-<int:top>-parking-lots-incomes/`: Get top 3 parking lots by income.
 
   - **Email Service**:
-    - `api/send-mail/`: Send an email to users.
+    - `(ADMIN)` `api/send-mail/`: Send an email to Socio users.
 
 ## Installation
 
