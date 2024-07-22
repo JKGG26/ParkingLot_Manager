@@ -15,6 +15,7 @@ from .models import BlackListTokenAccess, ParkingLot, User_ParkingLots
 from .models import VehicleParkingRegister, VehicleParkingHistorical, ParkingDailyIncomes
 
 import requests
+import json
 
 
 class ProtectedView(View):
@@ -856,6 +857,47 @@ def incomes_last_days_parking(request, days, id):
     else:
         return JsonResponse({'error': 'Method not supported'})
 
+
+# ------ INCOMES PARKING LOT ------ #
+def incomes_summary_parking(request, id):
+    # Get incomes of today
+    days = 0
+    ans_today = incomes_last_days_parking(request, days, id)
+    # Check answer
+    if ans_today.status_code != 200:
+        return ans_today
+    data_today = json.loads(ans_today.content.decode('utf-8'))
+    data_today['period'] = 'today'
+    # Get incomes of this week
+    current_date = date.today()
+    current_datetime = datetime(current_date.year, current_date.month, current_date.day,0,0,0,0)
+    days = current_datetime.weekday()
+    ans_week = incomes_last_days_parking(request, days, id)
+    # Check answer
+    if ans_week.status_code != 200:
+        return ans_week
+    data_week = json.loads(ans_week.content.decode('utf-8'))
+    data_week['period'] = 'week'
+    # Get incomes of this month
+    days = current_datetime.day
+    ans_month = incomes_last_days_parking(request, days, id)
+    # Check 
+    if ans_month.status_code != 200:
+        return ans_month
+    data_month = json.loads(ans_month.content.decode('utf-8'))
+    data_month['period'] = 'month'
+    # Get incomes of this year
+    days = int((current_datetime - datetime(current_datetime.year,1,1,0,0,0,0)).total_seconds() / (3600 * 24))
+    ans_year = incomes_last_days_parking(request, days, id)
+    # Check answer
+    if ans_year.status_code != 200:
+        return ans_year
+    data_year = json.loads(ans_year.content.decode('utf-8'))
+    data_year['period'] = 'year'
+    
+    # Unify answers
+    data_summary = [data_today, data_week, data_month, data_year]
+    return JsonResponse(data_summary, safe=False, status=200)
 
 # ------ TOP SOCIOS VEHICLES ------ #
 def top_socios_vehicles_entries(request, top, days):
